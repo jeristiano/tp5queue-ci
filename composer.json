@@ -1,0 +1,23 @@
+{
+    "name": "jeristiano/tp-queue-ci",
+    "description": "A TP5 Queue Package For CI",
+    "type": "composer-plugin",
+    "authors": [
+        {
+            "name": "jeristiano",
+            "email": "jeristinaokuang@gmail.com"
+        }
+    ],
+    "license": "Apache-2.0",
+    "autoload": {
+        "psr-4": {
+            "think\\": "src"
+        },
+        "files": [
+            "src/common.php"
+        ]
+    },
+    "require": {
+        "php": ">=7.0.0"
+    }
+}
