@@ -1,7 +1,7 @@
 {
     "name": "jeristiano/tp-queue-ci",
     "description": "A TP5 Queue Package For CI",
-    "type": "composer-plugin",
+    "type": "library",
     "authors": [
         {
             "name": "jeristiano",
@@ -14,7 +14,8 @@
             "think\\": "src"
         },
         "files": [
-            "src/common.php"
+            "src/common.php",
+            "src/config.php"
         ]
     },
     "require": {

@@ -29,7 +29,7 @@ class Queue
     private static function buildConnector ()
     {
 //        $options = \think\facade\Config::pull('queue');
-        $target = ROOT_PATH . 'config' . DIRECTORY_SEPARATOR . 'queue' . '.php';
+        $target = __DIR__.'../../'. 'config' . DIRECTORY_SEPARATOR . 'queue' . '.php';
 
         if (is_file($target)) {
             $options = include $target;
