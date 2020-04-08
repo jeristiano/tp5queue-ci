@@ -15,23 +15,27 @@ use Exception;
 use think\queue\Connector;
 use think\queue\job\Redis as RedisJob;
 
+/**
+ * Class Redis
+ * @package think\queue\connector
+ */
 class Redis extends Connector
 {
     /** @var  \Redis */
     protected $redis;
 
     protected $options = [
-        'expire'     => 60,
-        'default'    => 'default',
-        'host'       => '127.0.0.1',
-        'port'       => 6379,
-        'password'   => '',
-        'select'     => 0,
-        'timeout'    => 0,
+        'expire' => 60,
+        'default' => 'default',
+        'host' => '127.0.0.1',
+        'port' => 6379,
+        'password' => '',
+        'select' => 0,
+        'timeout' => 0,
         'persistent' => false,
     ];
 
-    public function __construct(array $options)
+    public function __construct (array $options)
     {
         if (!extension_loaded('redis')) {
             throw new Exception('redis扩展未安装');
@@ -40,7 +44,7 @@ class Redis extends Connector
             $this->options = array_merge($this->options, $options);
         }
 
-        $func        = $this->options['persistent'] ? 'pconnect' : 'connect';
+        $func = $this->options['persistent'] ? 'pconnect' : 'connect';
         $this->redis = new \Redis;
         $this->redis->$func($this->options['host'], $this->options['port'], $this->options['timeout']);
 
@@ -53,19 +57,19 @@ class Redis extends Connector
         }
     }
 
-    public function push($job, $data = '', $queue = null)
+    public function push ($job, $data = '', $queue = null)
     {
         return $this->pushRaw($this->createPayload($job, $data), $queue);
     }
 
-    public function later($delay, $job, $data = '', $queue = null)
+    public function later ($delay, $job, $data = '', $queue = null)
     {
         $payload = $this->createPayload($job, $data);
 
         $this->redis->zAdd($this->getQueue($queue) . ':delayed', time() + $delay, $payload);
     }
 
-    public function pop($queue = null)
+    public function pop ($queue = null)
     {
         $original = $queue ?: $this->options['default'];
 
@@ -78,7 +82,6 @@ class Redis extends Connector
         }
 
         $job = $this->redis->lPop($queue);
-
         if (false !== $job) {
             $this->redis->zAdd($queue . ':reserved', time() + $this->options['expire'], $job);
 
@@ -88,28 +91,27 @@ class Redis extends Connector
 
     /**
      * 重新发布任务
-     *
-     * @param  string $queue
-     * @param  string $payload
-     * @param  int    $delay
-     * @param  int    $attempts
+     * @param string $queue
+     * @param string $payload
+     * @param int    $delay
+     * @param int    $attempts
      * @return void
      */
-    public function release($queue, $payload, $delay, $attempts)
+    public function release ($queue, $payload, $delay, $attempts)
     {
         $payload = $this->setMeta($payload, 'attempts', $attempts);
 
         $this->redis->zAdd($this->getQueue($queue) . ':delayed', time() + $delay, $payload);
     }
 
-    public function pushRaw($payload, $queue = null)
+    public function pushRaw ($payload, $queue = null)
     {
         $this->redis->rPush($this->getQueue($queue), $payload);
 
         return json_decode($payload, true)['id'];
     }
 
-    protected function createPayload($job, $data = '', $queue = null)
+    protected function createPayload ($job, $data = '', $queue = null)
     {
         $payload = $this->setMeta(
             parent::createPayload($job, $data), 'id', $this->getRandomId()
@@ -120,24 +122,22 @@ class Redis extends Connector
 
     /**
      * 删除任务
-     *
-     * @param  string $queue
-     * @param  string $job
+     * @param string $queue
+     * @param string $job
      * @return void
      */
-    public function deleteReserved($queue, $job)
+    public function deleteReserved ($queue, $job)
     {
         $this->redis->zRem($this->getQueue($queue) . ':reserved', $job);
     }
 
     /**
      * 移动延迟任务
-     *
      * @param string $from
      * @param string $to
      * @param bool   $attempt
      */
-    public function migrateExpiredJobs($from, $to, $attempt = true)
+    public function migrateExpiredJobs ($from, $to, $attempt = true)
     {
         $this->redis->watch($from);
 
@@ -157,7 +157,7 @@ class Redis extends Connector
      * redis事务
      * @param \Closure $closure
      */
-    protected function transaction(\Closure $closure)
+    protected function transaction (\Closure $closure)
     {
         $this->redis->multi();
         try {
@@ -172,41 +172,38 @@ class Redis extends Connector
 
     /**
      * 获取所有到期任务
-     *
-     * @param  string $from
-     * @param  int    $time
+     * @param string $from
+     * @param int    $time
      * @return array
      */
-    protected function getExpiredJobs($from, $time)
+    protected function getExpiredJobs ($from, $time)
     {
         return $this->redis->zRangeByScore($from, '-inf', $time);
     }
 
     /**
      * 删除过期任务
-     *
-     * @param  string $from
-     * @param  int    $time
+     * @param string $from
+     * @param int    $time
      * @return void
      */
-    protected function removeExpiredJobs($from, $time)
+    protected function removeExpiredJobs ($from, $time)
     {
         $this->redis->zRemRangeByScore($from, '-inf', $time);
     }
 
     /**
      * 重新发布到期任务
-     *
-     * @param  string  $to
-     * @param  array   $jobs
-     * @param  boolean $attempt
+     * @param string  $to
+     * @param array   $jobs
+     * @param boolean $attempt
      */
-    protected function pushExpiredJobsOntoNewQueue($to, $jobs, $attempt = true)
+    protected function pushExpiredJobsOntoNewQueue ($to, $jobs, $attempt = true)
     {
         if ($attempt) {
             foreach ($jobs as &$job) {
                 $attempts = json_decode($job, true)['attempts'];
-                $job      = $this->setMeta($job, 'attempts', $attempts + 1);
+                $job = $this->setMeta($job, 'attempts', $attempts + 1);
             }
         }
         call_user_func_array([$this->redis, 'rPush'], array_merge([$to], $jobs));
@@ -214,21 +211,30 @@ class Redis extends Connector
 
     /**
      * 随机id
-     *
      * @return string
      */
-    protected function getRandomId()
+    protected function getRandomId ()
     {
-        return Str::random(32);
+        return self::random(32);
+    }
+
+    /**
+     * @param int $length
+     * @return mixed
+     */
+    public static function random ($length = 16)
+    {
+        $pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+        return mb_substr(str_shuffle(str_repeat($pool, $length)), 0, $length);
     }
 
     /**
      * 获取队列名
-     *
-     * @param  string|null $queue
+     * @param string|null $queue
      * @return string
      */
-    protected function getQueue($queue)
+    protected function getQueue ($queue)
     {
         return 'queues:' . ($queue ?: $this->options['default']);
     }

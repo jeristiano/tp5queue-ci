@@ -14,6 +14,9 @@ namespace think\queue;
 use Exception;
 use think\Queue;
 
+/**
+ * Class Worker
+ */
 class Worker
 {
 
@@ -29,9 +32,7 @@ class Worker
     {
 
         $job = $this->getNextJob($queue);
-
         if (!is_null($job)) {
-//            Hook::listen('worker_before_process', $queue);
             return $this->process($job, $maxTries, $delay);
         }
 
@@ -72,10 +73,8 @@ class Worker
         if ($maxTries > 0 && $job->attempts() > $maxTries) {
             return $this->logFailedJob($job);
         }
-
         try {
             $job->fire();
-
             return ['job' => $job, 'failed' => false];
         } catch (Exception $e) {
             if (!$job->isDeleted()) {
@@ -97,8 +96,6 @@ class Worker
             try {
                 $job->delete();
                 $job->failed();
-            } finally {
-//                Hook::listen('queue_failed', $job);
             }
         }
 
